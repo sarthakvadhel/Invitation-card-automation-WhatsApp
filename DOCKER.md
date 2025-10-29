@@ -62,15 +62,15 @@ docker build -t invitation-card-app .
 
 ### Running the Container
 
-**Basic run:**
+**Basic run (without persistence):**
 ```bash
 docker run -d -p 5000:5000 --name invitation-app invitation-card-app
 ```
 
-**With persistent database:**
+**With persistent database (recommended):**
 ```bash
 docker run -d -p 5000:5000 \
-  -v $(pwd)/invitations.db:/app/invitations.db \
+  -v $(pwd)/data:/app/data \
   --name invitation-app \
   invitation-card-app
 ```
@@ -78,7 +78,7 @@ docker run -d -p 5000:5000 \
 **With custom environment variables:**
 ```bash
 docker run -d -p 5000:5000 \
-  -v $(pwd)/invitations.db:/app/invitations.db \
+  -v $(pwd)/data:/app/data \
   -e FLASK_DEBUG=False \
   --name invitation-app \
   invitation-card-app
@@ -230,8 +230,13 @@ The application uses volumes for data persistence:
 
 ```yaml
 volumes:
-  - ./invitations.db:/app/invitations.db  # Database persistence
+  - ./data:/app/data  # Database directory persistence
 ```
+
+The database file (`invitations.db`) is stored in the `data/` directory, which is mounted as a volume. This ensures:
+- Data persists across container restarts
+- Database file is accessible from the host machine
+- No permission issues when creating the database
 
 ### Customizing Gunicorn
 
@@ -261,17 +266,17 @@ docker-compose up -d --build
 docker stop invitation-app
 docker rm invitation-app
 docker build -t invitation-card-app .
-docker run -d -p 5000:5000 -v $(pwd)/invitations.db:/app/invitations.db --name invitation-app invitation-card-app
+docker run -d -p 5000:5000 -v $(pwd)/data:/app/data --name invitation-app invitation-card-app
 ```
 
 ### Backup Database
 
 ```bash
 # Copy database from running container
-docker cp invitation-app:/app/invitations.db ./backup-invitations-$(date +%Y%m%d).db
+docker cp invitation-app:/app/data/invitations.db ./backup-invitations-$(date +%Y%m%d).db
 
-# Or if using volume mount
-cp invitations.db backup-invitations-$(date +%Y%m%d).db
+# Or if using volume mount (recommended)
+cp data/invitations.db backup-invitations-$(date +%Y%m%d).db
 ```
 
 ### Restore Database
@@ -281,7 +286,7 @@ cp invitations.db backup-invitations-$(date +%Y%m%d).db
 docker-compose down
 
 # Restore database
-cp backup-invitations-YYYYMMDD.db invitations.db
+cp backup-invitations-YYYYMMDD.db data/invitations.db
 
 # Start the container
 docker-compose up -d
@@ -325,11 +330,11 @@ sudo lsof -i :5000
 ### Database permission issues
 
 ```bash
-# Fix permissions
-sudo chown -R 1000:1000 invitations.db
+# Fix permissions for the data directory
+sudo chown -R 1000:1000 data/
 
 # Or recreate the database
-docker exec -it invitation-app rm /app/invitations.db
+docker exec -it invitation-app rm /app/data/invitations.db
 docker restart invitation-app
 ```
 
@@ -379,7 +384,7 @@ docker volume prune
 # Complete cleanup
 docker-compose down
 docker rmi invitation-card-app
-rm invitations.db
+rm -rf data/
 
 # Fresh start
 docker-compose up -d --build
@@ -436,7 +441,7 @@ docker-compose up -d --build
    Set up a cron job for automated backups:
    ```bash
    # Add to crontab (crontab -e)
-   0 2 * * * cd /root/Invitation-card-automation-WhatsApp && cp invitations.db backup-$(date +\%Y\%m\%d).db
+   0 2 * * * cd /root/Invitation-card-automation-WhatsApp && cp data/invitations.db backup-$(date +\%Y\%m\%d).db
    ```
 
 ## Support
