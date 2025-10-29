@@ -11,11 +11,38 @@ from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, jsonify, send_file
 from pdf_generator import InvitationPDFGenerator
 from googletrans import Translator
+import signal
+from contextlib import contextmanager
 
 app = Flask(__name__)
 
 # Initialize Google Translator (reuse instance for efficiency)
 translator = Translator()
+
+
+class TimeoutException(Exception):
+    """Exception raised when an operation times out"""
+    pass
+
+
+@contextmanager
+def time_limit(seconds):
+    """Context manager to limit execution time of a code block"""
+    def signal_handler(signum, frame):
+        raise TimeoutException("Operation timed out")
+    
+    # Set up the signal handler only on Unix-like systems
+    if hasattr(signal, 'SIGALRM'):
+        signal.signal(signal.SIGALRM, signal_handler)
+        signal.alarm(seconds)
+        try:
+            yield
+        finally:
+            signal.alarm(0)
+    else:
+        # On Windows or systems without SIGALRM, just execute without timeout
+        yield
+
 
 # Try to load config from config.py, otherwise use defaults
 try:
@@ -155,6 +182,7 @@ def transliterate_to_gujarati(english_text):
     """
     Transliterate English text to Gujarati script using Google Translate.
     Special exception: "Vadhel" is always translated as "વઢેળ"
+    Falls back to dictionary-based translation if Google Translate fails or times out.
     """
     if not english_text:
         return ""
@@ -169,46 +197,54 @@ def transliterate_to_gujarati(english_text):
     # Check if Vadhel is present
     has_vadhel = vadhel_pattern.search(english_text)
     
-    # Try to use Google Translate API
+    # Try to use Google Translate API with timeout protection
     try:
         # Replace Vadhel with a unique marker that won't be translated
         # Using a numeric code that Google Translate will preserve
         text_to_translate = vadhel_pattern.sub('XXX999XXX', english_text) if has_vadhel else english_text
         
-        result = translator.translate(text_to_translate, src='en', dest='gu')
-        translated_text = result.text if result and result.text else english_text
+        # Use timeout to prevent hanging (3 seconds should be enough for translation)
+        with time_limit(3):
+            result = translator.translate(text_to_translate, src='en', dest='gu')
+            translated_text = result.text if result and result.text else None
         
-        # Replace the marker with the correct Gujarati text
-        if has_vadhel:
-            # Replace our marker
-            translated_text = translated_text.replace('XXX999XXX', 'વઢેળ')
-            # Also try other variations that might have been translated
-            translated_text = translated_text.replace('વાધેલ', 'વઢેળ')
-            translated_text = translated_text.replace('વધેલ', 'વઢેળ')
-            # Clean up any remaining placeholder artifacts from old code/existing data
-            # This can be removed once all existing entries have been migrated/cleaned
-            translated_text = re.sub(r'_?પ્લેસહોલ્ડર', '', translated_text)
-        
-        return translated_text
-    except Exception as e:
-        # Fallback to dictionary-based translation if Google Translate fails
-        print(f"Google Translate failed: {e}. Using fallback translation.")
-        
-        # Convert to lowercase for matching
-        text_lower = english_text.lower().strip()
-        result = text_lower
-        
-        # Replace words with Gujarati equivalents from dictionary (including vadhel)
-        for eng, guj in ENGLISH_TO_GUJARATI.items():
-            # Use word boundary replacement to avoid partial matches
-            result = re.sub(r'\b' + eng + r'\b', guj, result, flags=re.IGNORECASE)
-        
-        # If we replaced something, return it
-        if any(ord(c) >= 0x0A80 and ord(c) <= 0x0AFF for c in result):
-            return result
-        
-        # Otherwise return original
-        return english_text
+        # If translation succeeded, process it
+        if translated_text:
+            # Replace the marker with the correct Gujarati text
+            if has_vadhel:
+                # Replace our marker
+                translated_text = translated_text.replace('XXX999XXX', 'વઢેળ')
+                # Also try other variations that might have been translated
+                translated_text = translated_text.replace('વાધેલ', 'વઢેળ')
+                translated_text = translated_text.replace('વધેલ', 'વઢેળ')
+                # Clean up any remaining placeholder artifacts from old code/existing data
+                # This can be removed once all existing entries have been migrated/cleaned
+                translated_text = re.sub(r'_?પ્લેસહોલ્ડર', '', translated_text)
+            
+            return translated_text
+    except (TimeoutException, Exception) as e:
+        # Log the error for debugging
+        error_type = "timed out" if isinstance(e, TimeoutException) else "failed"
+        print(f"Google Translate {error_type}: {e}. Using fallback translation.")
+    
+    # Fallback to dictionary-based translation if Google Translate fails or times out
+    print("Using dictionary-based fallback translation.")
+    
+    # Convert to lowercase for matching
+    text_lower = english_text.lower().strip()
+    result = text_lower
+    
+    # Replace words with Gujarati equivalents from dictionary (including vadhel)
+    for eng, guj in ENGLISH_TO_GUJARATI.items():
+        # Use word boundary replacement to avoid partial matches
+        result = re.sub(r'\b' + eng + r'\b', guj, result, flags=re.IGNORECASE)
+    
+    # If we replaced something, return it
+    if any(ord(c) >= 0x0A80 and ord(c) <= 0x0AFF for c in result):
+        return result
+    
+    # Otherwise return original
+    return english_text
 
 
 def get_db():
@@ -245,25 +281,34 @@ def index():
 def add_entry():
     """Page 1: Form to add entry"""
     if request.method == 'POST':
-        name_english = request.form.get('name_english', '').strip()
-        mobile = request.form.get('mobile', '').strip()
-        
-        if not name_english:
-            return render_template('add.html', error='Name is required')
-        
-        # Auto-translate to Gujarati
-        name_gujarati = transliterate_to_gujarati(name_english)
-        
-        # Save to database (mobile can be empty)
-        db = get_db()
-        db.execute(
-            'INSERT INTO invitations (name_english, name_gujarati, mobile) VALUES (?, ?, ?)',
-            (name_english, name_gujarati, mobile if mobile else None)
-        )
-        db.commit()
-        db.close()
-        
-        return redirect(url_for('view_entries'))
+        try:
+            name_english = request.form.get('name_english', '').strip()
+            mobile = request.form.get('mobile', '').strip()
+            
+            if not name_english:
+                return render_template('add.html', error='Name is required')
+            
+            # Auto-translate to Gujarati
+            name_gujarati = transliterate_to_gujarati(name_english)
+            
+            # Save to database (mobile can be empty)
+            db = get_db()
+            db.execute(
+                'INSERT INTO invitations (name_english, name_gujarati, mobile) VALUES (?, ?, ?)',
+                (name_english, name_gujarati, mobile if mobile else None)
+            )
+            db.commit()
+            db.close()
+            
+            return redirect(url_for('view_entries'))
+        except Exception as e:
+            # Log the error for debugging
+            print(f"Error adding entry: {type(e).__name__}: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            
+            # Return user-friendly error message
+            return render_template('add.html', error='An error occurred while adding the entry. Please try again.')
     
     return render_template('add.html')
 
