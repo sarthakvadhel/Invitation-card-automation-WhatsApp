@@ -7,6 +7,8 @@ Flask-based web app for managing and sending invitation cards via WhatsApp
 import os
 import re
 import sqlite3
+import traceback
+import threading
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, jsonify, send_file
 from pdf_generator import InvitationPDFGenerator
@@ -25,6 +27,10 @@ class TimeoutException(Exception):
     pass
 
 
+# Lock to ensure only one timeout is active at a time (for signal-based timeouts)
+_timeout_lock = threading.Lock()
+
+
 @contextmanager
 def time_limit(seconds):
     """Context manager to limit execution time of a code block"""
@@ -33,12 +39,14 @@ def time_limit(seconds):
     
     # Set up the signal handler only on Unix-like systems
     if hasattr(signal, 'SIGALRM'):
-        signal.signal(signal.SIGALRM, signal_handler)
-        signal.alarm(seconds)
-        try:
-            yield
-        finally:
-            signal.alarm(0)
+        # Use lock to prevent concurrent timeouts (signal is process-wide)
+        with _timeout_lock:
+            signal.signal(signal.SIGALRM, signal_handler)
+            signal.alarm(seconds)
+            try:
+                yield
+            finally:
+                signal.alarm(0)
     else:
         # On Windows or systems without SIGALRM, just execute without timeout
         yield
@@ -304,7 +312,6 @@ def add_entry():
         except Exception as e:
             # Log the error for debugging
             print(f"Error adding entry: {type(e).__name__}: {str(e)}")
-            import traceback
             traceback.print_exc()
             
             # Return user-friendly error message
