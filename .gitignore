@@ -49,6 +49,7 @@ test_automation.py
 # Web application
 invitations.db
 *.db
+data/
 instance/
 .flask_session/
 config.py
