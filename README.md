@@ -21,19 +21,115 @@
 
 ## 🚀 Quick Start
 
-### 1. Install Dependencies
+### Option 1: Docker Deployment (Recommended for Production)
+
+Docker provides the easiest way to deploy this application on any server, including Digital Ocean droplets.
+
+#### Prerequisites
+- Docker installed on your system ([Install Docker](https://docs.docker.com/get-docker/))
+- Docker Compose (usually included with Docker Desktop)
+
+#### Using Docker Compose (Easiest)
+
+1. **Clone the repository**
+```bash
+git clone https://github.com/sarthakvadhel/Invitation-card-automation-WhatsApp.git
+cd Invitation-card-automation-WhatsApp
+```
+
+2. **Start the application**
+```bash
+docker-compose up -d
+```
+
+3. **Access the application**
+- Open your browser and navigate to: **http://localhost:5000**
+- Or access from your server: **http://your-server-ip:5000**
+
+4. **View logs**
+```bash
+docker-compose logs -f
+```
+
+5. **Stop the application**
+```bash
+docker-compose down
+```
+
+#### Using Docker directly
+
+1. **Build the Docker image**
+```bash
+docker build -t invitation-card-app .
+```
+
+2. **Run the container**
+```bash
+docker run -d -p 5000:5000 \
+  -v $(pwd)/invitations.db:/app/invitations.db \
+  --name invitation-app \
+  invitation-card-app
+```
+
+3. **View logs**
+```bash
+docker logs -f invitation-app
+```
+
+4. **Stop and remove the container**
+```bash
+docker stop invitation-app
+docker rm invitation-app
+```
+
+#### Production Deployment on Digital Ocean
+
+For deploying on a Digital Ocean Ubuntu droplet:
+
+1. **SSH into your droplet**
+```bash
+ssh root@your-droplet-ip
+```
+
+2. **Install Docker** (if not already installed)
+```bash
+curl -fsSL https://get.docker.com -o get-docker.sh
+sh get-docker.sh
+```
+
+3. **Install Docker Compose** (if not already installed)
+```bash
+apt-get update
+apt-get install docker-compose-plugin
+```
+
+4. **Clone and deploy**
+```bash
+git clone https://github.com/sarthakvadhel/Invitation-card-automation-WhatsApp.git
+cd Invitation-card-automation-WhatsApp
+docker-compose up -d
+```
+
+5. **Access your application**
+- Visit: **http://your-droplet-ip:5000**
+
+**Note:** The database (`invitations.db`) is persisted using Docker volumes, so your data will be preserved even if you restart the container.
+
+### Option 2: Manual Installation
+
+#### 1. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Run the Application
+#### 2. Run the Application
 
 ```bash
 python app.py
 ```
 
-### 3. Open in Browser
+#### 3. Open in Browser
 
 Navigate to: **http://localhost:5000**
 
