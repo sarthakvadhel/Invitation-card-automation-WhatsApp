@@ -58,7 +58,9 @@ WHATSAPP_SENDERS = {
 SECRET_KEY = 'your-secret-key-change-this-in-production'
 
 # Database Configuration
-DATABASE = 'invitations.db'
+# For Docker deployments, the database will be stored in /app/data/invitations.db
+# For local development, you can use a relative path like 'invitations.db'
+DATABASE = 'data/invitations.db'
 
 # PDF Configuration
 # Coordinates for adding Gujarati name on pages 1 and 4

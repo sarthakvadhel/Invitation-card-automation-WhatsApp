@@ -60,7 +60,10 @@ try:
 except ImportError:
     # Use default configuration
     app.config['SECRET_KEY'] = 'your-secret-key-here'
-    app.config['DATABASE'] = 'invitations.db'
+    # Use data directory for database to ensure proper permissions in Docker
+    data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+    os.makedirs(data_dir, exist_ok=True)
+    app.config['DATABASE'] = os.path.join(data_dir, 'invitations.db')
 
 # Translation mapping for English to Gujarati
 ENGLISH_TO_GUJARATI = {
@@ -279,6 +282,10 @@ def init_db():
     db.close()
 
 
+# Initialize database on app startup (regardless of how it's run)
+init_db()
+
+
 @app.route('/')
 def index():
     """Redirect to add entry page"""
@@ -451,9 +458,6 @@ def generate_pdf_blob(entry_id):
 
 
 if __name__ == '__main__':
-    # Initialize database
-    init_db()
-    
     # Run the app (debug mode should be disabled in production)
     # Set debug=False for production deployment
     import os

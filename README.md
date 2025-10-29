@@ -66,7 +66,7 @@ docker build -t invitation-card-app .
 2. **Run the container**
 ```bash
 docker run -d -p 5000:5000 \
-  -v $(pwd)/invitations.db:/app/invitations.db \
+  -v $(pwd)/data:/app/data \
   --name invitation-app \
   invitation-card-app
 ```
@@ -113,7 +113,7 @@ docker-compose up -d
 5. **Access your application**
 - Visit: **http://your-droplet-ip:5000**
 
-**Note:** The database (`invitations.db`) is persisted using Docker volumes, so your data will be preserved even if you restart the container.
+**Note:** The database is stored in the `data/` directory and persisted using Docker volumes, so your data will be preserved even if you restart the container.
 
 ### Option 2: Manual Installation
 
@@ -192,7 +192,7 @@ Each sender's name appears in the WhatsApp message and the remark.
 
 ## 🗄️ Database
 
-The app uses SQLite database (`invitations.db`) to store:
+The app uses SQLite database stored in `data/invitations.db` to store:
 - Guest name (English & Gujarati)
 - Mobile number
 - Status remark
@@ -207,7 +207,7 @@ Create a `config.py` file for custom settings:
 SECRET_KEY = 'your-secret-key-here'
 
 # Database file path
-DATABASE = 'invitations.db'
+DATABASE = 'data/invitations.db'
 ```
 
 See `config_example.py` for reference.
@@ -236,7 +236,8 @@ See `config_example.py` for reference.
 │   └── view.html            # View & send page
 ├── Invitation card.pdf      # Invitation PDF template
 ├── Vadhel Sarthak's Wedding Invitation.pdf  # Generated personalized PDF
-└── invitations.db           # SQLite database (auto-created)
+└── data/                    # Database directory (auto-created)
+    └── invitations.db       # SQLite database
 ```
 
 ## 📝 Message Template
@@ -274,7 +275,7 @@ The WhatsApp message sent is:
 - Common Gujarati font: Shruti, Noto Sans Gujarati
 
 ### Database Errors
-- **Solution**: Delete `invitations.db` and restart the app (will recreate with fresh database)
+- **Solution**: Delete the `data/` directory and restart the app (will recreate with fresh database)
 
 ## 💡 Tips
 
