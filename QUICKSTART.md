@@ -2,6 +2,8 @@
 
 This is a quick reference for deploying to your Digital Ocean droplet at http://159.89.175.226:5000
 
+> **Note:** This guide uses your specific droplet IP (159.89.175.226). If you're using a different server, replace this IP with your server's address.
+
 ## Initial Deployment
 
 ```bash
@@ -47,6 +49,10 @@ docker compose up -d --build
 ## Backup Database
 
 ```bash
+# The database is in the project directory (mounted as volume)
+# Make sure you're in the project directory
+cd ~/Invitation-card-automation-WhatsApp
+
 # Create a backup
 cp invitations.db backup-invitations-$(date +%Y%m%d).db
 
@@ -75,6 +81,9 @@ docker compose up -d --build
 ## Complete Reset (if needed)
 
 ```bash
+# Make sure you're in the project directory
+cd ~/Invitation-card-automation-WhatsApp
+
 # Stop and remove everything
 docker compose down
 docker system prune -a -f
