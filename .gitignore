@@ -1,0 +1,64 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test files
+test_*.csv
+test_*.xlsx
+test_automation.py
+
+# User data (keep template but not user's actual data)
+# Uncomment the line below if you don't want to track user's contact list
+# Invitation_Data.xlsx
+# Invitation_Data.csv
+
+# Web application
+invitations.db
+*.db
+instance/
+.flask_session/
+config.py
+
+# Temporary files
+/tmp/
+*.tmp
+temp_*.pdf
+Vadhel Sarthak's Wedding Invitation.pdf
+
+# Coordinate test outputs
+output_position_tests/
+/tmp/position_tests/
