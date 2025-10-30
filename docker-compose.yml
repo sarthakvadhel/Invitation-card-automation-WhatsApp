@@ -1,0 +1,9 @@
+services:
+  invitation-app:
+    build: .
+    container_name: invitation-card-app
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_DEBUG=False
+    restart: unless-stopped

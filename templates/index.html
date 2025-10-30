@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wedding Invitation Sender</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        header h1 {
+            font-size: 2.2em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        header p {
+            font-size: 1.1em;
+            color: #6c757d;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #333;
+            font-size: 1.1em;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1.1em;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .translated-name {
+            margin-top: 10px;
+            padding: 15px;
+            background: #f0f8ff;
+            border-left: 4px solid #2196F3;
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .translated-name.show {
+            display: block;
+        }
+        
+        .translated-name label {
+            font-weight: 600;
+            color: #1976D2;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .translated-name .gujarati-text {
+            font-size: 1.5em;
+            color: #d63384;
+            font-weight: 600;
+        }
+        
+        .sender-buttons {
+            margin-top: 30px;
+        }
+        
+        .sender-buttons h3 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 1.2em;
+        }
+        
+        .btn-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        
+        .btn-sender {
+            padding: 15px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-sender:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn-sender:not(:disabled):hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-sarthak {
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+        }
+        
+        .btn-vanrajbhai {
+            background: linear-gradient(135deg, #128C7E 0%, #075E54 100%);
+        }
+        
+        .btn-vasudha {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .info-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-bottom: 25px;
+            border-radius: 5px;
+        }
+        
+        .info-box h3 {
+            margin-bottom: 10px;
+            color: #856404;
+            font-size: 1.1em;
+        }
+        
+        .info-box ul {
+            margin-left: 20px;
+            color: #856404;
+        }
+        
+        .info-box li {
+            margin-bottom: 5px;
+        }
+        
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .loading.show {
+            display: flex;
+        }
+        
+        .loading-content {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 25px;
+            }
+            
+            header h1 {
+                font-size: 1.8em;
+            }
+            
+            .btn-group {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎉 Wedding Invitation</h1>
+            <p>Send personalized invitations via WhatsApp</p>
+        </header>
+        
+        <div class="info-box">
+            <h3>ℹ️ How to use:</h3>
+            <ul>
+                <li>Enter the guest's name in English</li>
+                <li>Name will auto-translate to Gujarati</li>
+                <li>Click a sender button to send invitation via WhatsApp</li>
+            </ul>
+        </div>
+        
+        <form id="invitationForm">
+            <div class="form-group">
+                <label for="name_english">Guest Name (English) *</label>
+                <input 
+                    type="text" 
+                    id="name_english" 
+                    name="name_english" 
+                    placeholder="e.g., Rameshbhai Patel"
+                    required
+                    autofocus
+                >
+            </div>
+            
+            <div class="translated-name" id="translatedName">
+                <label>Name in Gujarati:</label>
+                <div class="gujarati-text" id="nameGujarati"></div>
+            </div>
+            
+            <div class="sender-buttons">
+                <h3>Select Sender:</h3>
+                <div class="btn-group">
+                    <button 
+                        type="button" 
+                        class="btn-sender btn-sarthak" 
+                        onclick="sendInvitation('sarthak')"
+                        disabled
+                    >
+                        <span>📱</span>
+                        <span>Sarthak</span>
+                    </button>
+                    <button 
+                        type="button" 
+                        class="btn-sender btn-vanrajbhai" 
+                        onclick="sendInvitation('vanrajbhai')"
+                        disabled
+                    >
+                        <span>📱</span>
+                        <span>Vanrajbhai</span>
+                    </button>
+                    <button 
+                        type="button" 
+                        class="btn-sender btn-vasudha" 
+                        onclick="sendInvitation('vasudha')"
+                        disabled
+                    >
+                        <span>📱</span>
+                        <span>Vasudha</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <div class="loading" id="loading">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>Preparing invitation...</p>
+        </div>
+    </div>
+
+    <script>
+        let currentNameGujarati = '';
+        const senderNames = {
+            {% for key, sender in senders.items() %}
+            '{{ key }}': '{{ sender.name }}',
+            {% endfor %}
+        };
+        
+        // Debounce timer
+        let translationTimer = null;
+        
+        // Listen for input changes
+        document.getElementById('name_english').addEventListener('input', function(e) {
+            const nameEnglish = e.target.value.trim();
+            
+            // Clear previous timer
+            if (translationTimer) {
+                clearTimeout(translationTimer);
+            }
+            
+            if (!nameEnglish) {
+                // Hide translated name if input is empty
+                document.getElementById('translatedName').classList.remove('show');
+                disableSenderButtons();
+                return;
+            }
+            
+            // Debounce translation (wait 500ms after user stops typing)
+            translationTimer = setTimeout(() => {
+                translateName(nameEnglish);
+            }, 500);
+        });
+        
+        async function translateName(nameEnglish) {
+            try {
+                const response = await fetch('/translate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name_english: nameEnglish })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentNameGujarati = data.name_gujarati;
+                    document.getElementById('nameGujarati').textContent = currentNameGujarati;
+                    document.getElementById('translatedName').classList.add('show');
+                    enableSenderButtons();
+                } else {
+                    console.error('Translation failed:', data.error);
+                    disableSenderButtons();
+                }
+            } catch (error) {
+                console.error('Error translating name:', error);
+                disableSenderButtons();
+            }
+        }
+        
+        function enableSenderButtons() {
+            const buttons = document.querySelectorAll('.btn-sender');
+            buttons.forEach(btn => btn.disabled = false);
+        }
+        
+        function disableSenderButtons() {
+            const buttons = document.querySelectorAll('.btn-sender');
+            buttons.forEach(btn => btn.disabled = true);
+        }
+        
+        async function sendInvitation(senderKey) {
+            if (!currentNameGujarati) {
+                alert('Please enter a guest name first');
+                return;
+            }
+            
+            const senderName = senderNames[senderKey] || 'Unknown';
+            
+            // Create WhatsApp message with sender name
+            const message = `નમસ્તે ${currentNameGujarati},
+આપને અને આપના પરિવારને અમારા લગ્ન સમારોહમાં આમંત્રિત કરવા માટે આનંદ થાય છે.
+કૃપા કરીને આમંત્રણ કાર્ડ ને રૂબરૂ મળ્યા તુલ્ય સમજી આ વઢેળ પરિવારના તેડાને સ્વીકારીને 
+અમારા પ્રસંગમાં અભિવૃધ્ધિ કરશોજી.
+
+સાદર,
+${senderName}`;
+            
+            // Check if Web Share API is available with file support
+            if (navigator.share && navigator.canShare) {
+                try {
+                    // Show loading indicator
+                    document.getElementById('loading').classList.add('show');
+                    
+                    // Fetch the PDF
+                    console.log('Fetching PDF...');
+                    const response = await fetch('/get-pdf');
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to get PDF');
+                    }
+                    
+                    const pdfBlob = await response.blob();
+                    const pdfFile = new File([pdfBlob], "Vadhel Sarthak's Wedding Invitation.pdf", { type: 'application/pdf' });
+                    
+                    // Check if we can share files
+                    const shareData = {
+                        title: 'Wedding Invitation',
+                        text: message,
+                        files: [pdfFile]
+                    };
+                    
+                    if (navigator.canShare(shareData)) {
+                        // Hide loading indicator
+                        document.getElementById('loading').classList.remove('show');
+                        
+                        // Share using Web Share API
+                        await navigator.share(shareData);
+                        
+                        console.log('✓ Shared successfully via', senderName);
+                    } else {
+                        // Fall back to old method if file sharing is not supported
+                        console.log('File sharing not supported, using fallback method');
+                        document.getElementById('loading').classList.remove('show');
+                        useFallbackMethod(message);
+                    }
+                } catch (error) {
+                    console.error('Error sharing via Web Share API:', error);
+                    document.getElementById('loading').classList.remove('show');
+                    
+                    // If user cancelled, just return
+                    if (error.name === 'AbortError') {
+                        return;
+                    }
+                    
+                    // Use fallback method for other errors
+                    useFallbackMethod(message);
+                }
+            } else {
+                // Web Share API not available, use fallback
+                console.log('Web Share API not available, using fallback method');
+                useFallbackMethod(message);
+            }
+        }
+        
+        function useFallbackMethod(message) {
+            // This method opens PDF in new tab and WhatsApp separately
+            console.log('Using fallback method: download PDF + open WhatsApp');
+            
+            // Open PDF in new tab (will trigger download)
+            window.open('/get-pdf', '_blank');
+            
+            // Wait a bit for PDF download to start, then open WhatsApp
+            setTimeout(() => {
+                // Get WhatsApp URL
+                const whatsappUrl = getWhatsAppUrl(message);
+                
+                // Open WhatsApp
+                window.open(whatsappUrl, '_blank');
+                
+                // Show instruction to user
+                setTimeout(() => {
+                    alert('Instructions:\n\n1. The invitation PDF has been downloaded\n2. WhatsApp is now open with the message\n3. Please attach the downloaded PDF file to WhatsApp\n4. Send the message');
+                }, 1000);
+            }, 1000);
+        }
+        
+        // Detect platform for WhatsApp link
+        function isMobileDevice() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+        
+        // Get WhatsApp URL based on platform (no phone number needed, user selects recipient)
+        function getWhatsAppUrl(message) {
+            const encodedMessage = encodeURIComponent(message);
+            
+            if (isMobileDevice()) {
+                // Mobile: Opens WhatsApp app directly
+                return `whatsapp://send?text=${encodedMessage}`;
+            } else {
+                // Desktop: Opens WhatsApp Web
+                return `https://web.whatsapp.com/send?text=${encodedMessage}`;
+            }
+        }
+    </script>
+</body>
+</html>
