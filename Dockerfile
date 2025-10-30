@@ -13,12 +13,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 COPY requirements.txt .
 
 # Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Note: In some environments, you may need to add --trusted-host flags for SSL issues
+RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org -r requirements.txt
 
 # Copy application files
 COPY app.py .
 COPY templates/ templates/
-COPY "Invitation card.pdf" .
+COPY *.pdf .
 
 # Expose port 5000
 EXPOSE 5000
