@@ -1,20 +1,17 @@
 #!/usr/bin/env python3
 """
 Invitation Card Web Application
-Flask-based web app for managing and sending invitation cards via WhatsApp
+Flask-based web app for sending invitation cards via WhatsApp
 """
 
 import os
 import re
-import sqlite3
-import traceback
 import threading
-from datetime import datetime
-from flask import Flask, render_template, request, redirect, url_for, jsonify, send_file
-from pdf_generator import InvitationPDFGenerator
+from flask import Flask, render_template, request, jsonify, send_file
 from googletrans import Translator
 import signal
 from contextlib import contextmanager
+import io
 
 app = Flask(__name__)
 
@@ -51,19 +48,6 @@ def time_limit(seconds):
         # On Windows or systems without SIGALRM, just execute without timeout
         yield
 
-
-# Try to load config from config.py, otherwise use defaults
-try:
-    from config import SECRET_KEY, DATABASE
-    app.config['SECRET_KEY'] = SECRET_KEY
-    app.config['DATABASE'] = DATABASE
-except ImportError:
-    # Use default configuration
-    app.config['SECRET_KEY'] = 'your-secret-key-here'
-    # Use data directory for database to ensure proper permissions in Docker
-    data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
-    os.makedirs(data_dir, exist_ok=True)
-    app.config['DATABASE'] = os.path.join(data_dir, 'invitations.db')
 
 # Translation mapping for English to Gujarati
 ENGLISH_TO_GUJARATI = {
@@ -138,6 +122,7 @@ ENGLISH_TO_GUJARATI = {
     'girish': 'ગિરીશ',
     'sarthak': 'સાર્થક',
     'vasudha': 'વસુધા',
+    'vanrajbhai': 'વનરાજભાઈ',
     
     # Common first names (female)
     'kalpana': 'કલ્પના',
@@ -172,19 +157,16 @@ ENGLISH_TO_GUJARATI = {
     'dipti': 'દીપ્તી',
 }
 
-# WhatsApp sender configurations (loaded from whatsapp_integration module)
+# WhatsApp sender configurations
 WHATSAPP_SENDERS = {
     'sarthak': {
         'name': 'Sarthak',
-        'phone': '919737932864',
     },
     'vanrajbhai': {
         'name': 'Vanrajbhai',
-        'phone': '919574932864',
     },
     'vasudha': {
         'name': 'Vasudha',
-        'phone': '916355995964',
     }
 }
 
@@ -229,7 +211,6 @@ def transliterate_to_gujarati(english_text):
                 translated_text = translated_text.replace('વાધેલ', 'વઢેળ')
                 translated_text = translated_text.replace('વધેલ', 'વઢેળ')
                 # Clean up any remaining placeholder artifacts from old code/existing data
-                # This can be removed once all existing entries have been migrated/cleaned
                 translated_text = re.sub(r'_?પ્લેસહોલ્ડર', '', translated_text)
             
             return translated_text
@@ -258,208 +239,50 @@ def transliterate_to_gujarati(english_text):
     return english_text
 
 
-def get_db():
-    """Get database connection"""
-    db = sqlite3.connect(app.config['DATABASE'])
-    db.row_factory = sqlite3.Row
-    return db
-
-
-def init_db():
-    """Initialize the database"""
-    db = get_db()
-    db.execute('''
-        CREATE TABLE IF NOT EXISTS invitations (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name_english TEXT NOT NULL,
-            name_gujarati TEXT NOT NULL,
-            mobile TEXT,
-            remark TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    db.commit()
-    db.close()
-
-
-# Initialize database on app startup (regardless of how it's run)
-init_db()
-
-
 @app.route('/')
 def index():
-    """Redirect to add entry page"""
-    return redirect(url_for('add_entry'))
+    """Main page with guest name entry and sender selection"""
+    return render_template('index.html', senders=WHATSAPP_SENDERS)
 
 
-@app.route('/add', methods=['GET', 'POST'])
-def add_entry():
-    """Page 1: Form to add entry"""
-    if request.method == 'POST':
-        try:
-            name_english = request.form.get('name_english', '').strip()
-            mobile = request.form.get('mobile', '').strip()
-            
-            if not name_english:
-                return render_template('add.html', error='Name is required')
-            
-            # Auto-translate to Gujarati
-            name_gujarati = transliterate_to_gujarati(name_english)
-            
-            # Save to database (mobile can be empty)
-            db = get_db()
-            db.execute(
-                'INSERT INTO invitations (name_english, name_gujarati, mobile) VALUES (?, ?, ?)',
-                (name_english, name_gujarati, mobile if mobile else None)
-            )
-            db.commit()
-            db.close()
-            
-            return redirect(url_for('view_entries'))
-        except Exception as e:
-            # Log the error for debugging
-            print(f"Error adding entry: {type(e).__name__}: {str(e)}")
-            traceback.print_exc()
-            
-            # Return user-friendly error message
-            return render_template('add.html', error='An error occurred while adding the entry. Please try again.')
-    
-    return render_template('add.html')
-
-
-@app.route('/view')
-def view_entries():
-    """Page 2: Table view with WhatsApp sending buttons"""
-    db = get_db()
-    entries = db.execute('SELECT * FROM invitations ORDER BY id DESC').fetchall()
-    db.close()
-    
-    return render_template('view.html', entries=entries, senders=WHATSAPP_SENDERS)
-
-
-@app.route('/update-remark/<int:entry_id>', methods=['POST'])
-def update_remark(entry_id):
-    """Update remark for an entry after manual WhatsApp send"""
+@app.route('/translate', methods=['POST'])
+def translate_name():
+    """API endpoint to translate name from English to Gujarati"""
     data = request.get_json()
-    remark = data.get('remark', '').strip()
+    name_english = data.get('name_english', '').strip()
     
-    # Remark is optional - allow empty string
-    # If user cancels the prompt, we don't update anything (handled in frontend)
+    if not name_english:
+        return jsonify({'success': False, 'error': 'Name is required'})
     
-    db = get_db()
+    # Auto-translate to Gujarati
+    name_gujarati = transliterate_to_gujarati(name_english)
     
-    # Check if entry exists
-    entry = db.execute('SELECT * FROM invitations WHERE id = ?', (entry_id,)).fetchone()
-    if not entry:
-        db.close()
-        return jsonify({'success': False, 'error': 'Entry not found'})
-    
-    # Update the remark
-    db.execute('UPDATE invitations SET remark = ? WHERE id = ?', (remark, entry_id))
-    db.commit()
-    db.close()
-    
-    return jsonify({'success': True})
+    return jsonify({'success': True, 'name_gujarati': name_gujarati})
 
 
-@app.route('/update-mobile/<int:entry_id>', methods=['POST'])
-def update_mobile(entry_id):
-    """Update mobile number for an entry"""
-    data = request.get_json()
-    mobile = data.get('mobile', '').strip()
+@app.route('/get-pdf')
+def get_pdf():
+    """Return the PDF template as-is"""
+    template_pdf = 'Invitation card.pdf'
     
-    db = get_db()
+    if not os.path.exists(template_pdf):
+        return jsonify({'success': False, 'error': 'PDF template not found'}), 404
     
-    # Check if entry exists
-    entry = db.execute('SELECT * FROM invitations WHERE id = ?', (entry_id,)).fetchone()
-    if not entry:
-        db.close()
-        return jsonify({'success': False, 'error': 'Entry not found'})
-    
-    # Update the mobile number
-    db.execute('UPDATE invitations SET mobile = ? WHERE id = ?', (mobile if mobile else None, entry_id))
-    db.commit()
-    db.close()
-    
-    return jsonify({'success': True})
-
-
-@app.route('/delete/<int:entry_id>', methods=['POST'])
-def delete_entry(entry_id):
-    """Delete an entry"""
-    db = get_db()
-    db.execute('DELETE FROM invitations WHERE id = ?', (entry_id,))
-    db.commit()
-    db.close()
-    
-    return jsonify({'success': True})
-
-
-@app.route('/generate-pdf/<int:entry_id>')
-def generate_pdf(entry_id):
-    """Generate personalized PDF for an entry and return as downloadable file"""
-    db = get_db()
-    entry = db.execute('SELECT * FROM invitations WHERE id = ?', (entry_id,)).fetchone()
-    db.close()
-    
-    if not entry:
-        return jsonify({'success': False, 'error': 'Entry not found'}), 404
-    
-    # Get Gujarati name
-    gujarati_name = entry['name_gujarati']
-    
-    # Generate the PDF in memory (not saved to disk)
     try:
-        pdf_generator = InvitationPDFGenerator()
-        pdf_bytes = pdf_generator.generate_personalized_invitation(gujarati_name, return_bytes=True)
-        
-        # Return the PDF file for download directly from memory
+        # Return the PDF template as-is
         return send_file(
-            pdf_bytes,
-            as_attachment=True,
-            download_name="Vadhel Sarthak's Wedding Invitation.pdf",
-            mimetype='application/pdf'
-        )
-    except Exception as e:
-        # Log the error for debugging but don't expose stack trace to user
-        print(f"Error generating PDF for entry {entry_id}: {str(e)}")
-        return jsonify({'success': False, 'error': 'Failed to generate PDF'}), 500
-
-
-@app.route('/generate-pdf-blob/<int:entry_id>')
-def generate_pdf_blob(entry_id):
-    """Generate personalized PDF for an entry and return as inline file for Web Share API"""
-    db = get_db()
-    entry = db.execute('SELECT * FROM invitations WHERE id = ?', (entry_id,)).fetchone()
-    db.close()
-    
-    if not entry:
-        return jsonify({'success': False, 'error': 'Entry not found'}), 404
-    
-    # Get Gujarati name
-    gujarati_name = entry['name_gujarati']
-    
-    # Generate the PDF in memory (not saved to disk)
-    try:
-        pdf_generator = InvitationPDFGenerator()
-        pdf_bytes = pdf_generator.generate_personalized_invitation(gujarati_name, return_bytes=True)
-        
-        # Return the PDF file as inline (not as attachment) so it can be used by Web Share API
-        return send_file(
-            pdf_bytes,
+            template_pdf,
             as_attachment=False,
             download_name="Vadhel Sarthak's Wedding Invitation.pdf",
             mimetype='application/pdf'
         )
     except Exception as e:
-        # Log the error for debugging but don't expose stack trace to user
-        print(f"Error generating PDF for entry {entry_id}: {str(e)}")
-        return jsonify({'success': False, 'error': 'Failed to generate PDF'}), 500
+        print(f"Error sending PDF: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to send PDF'}), 500
 
 
 if __name__ == '__main__':
     # Run the app (debug mode should be disabled in production)
-    # Set debug=False for production deployment
     import os
     debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
     app.run(debug=debug_mode, host='0.0.0.0', port=5000)
