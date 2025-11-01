@@ -408,15 +408,11 @@ ${senderName}`;
                     const pdfBlob = await response.blob();
                     const pdfFile = new File([pdfBlob], "Vadhel Sarthak's Wedding Invitation.pdf", { type: 'application/pdf' });
                     
-                    // Create a text file with the message to ensure it's included on Android WhatsApp
-                    // This workaround helps Android WhatsApp include the message text
-                    const textBlob = new Blob([message], { type: 'text/plain' });
-                    const textFile = new File([textBlob], "message.txt", { type: 'text/plain' });
-                    
-                    // Share both PDF and text file - WhatsApp on Android will read the text file
+                    // Check if we can share files
                     const shareData = {
+                        title: 'Wedding Invitation',
                         text: message,
-                        files: [pdfFile, textFile]
+                        files: [pdfFile]
                     };
                     
                     if (navigator.canShare(shareData)) {
