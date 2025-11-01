@@ -314,6 +314,9 @@
         
         // Configuration constants
         const ANDROID_WHATSAPP_INSTRUCTIONS = '📱 Android WhatsApp Instructions:\n\n1. ✅ The invitation PDF has been downloaded to your device\n2. ✅ WhatsApp will open with the greeting message\n3. 📎 Please tap the attachment icon and select the downloaded PDF\n4. ✈️ Send the message with the PDF attached';
+        const PDF_FILENAME = "Vadhel Sarthak's Wedding Invitation.pdf";
+        const PDF_DOWNLOAD_DELAY_MS = 300;
+        const INSTRUCTIONS_DELAY_MS = 500;
         
         // Debounce timer
         let translationTimer = null;
@@ -418,7 +421,7 @@ ${senderName}`;
                     }
                     
                     const pdfBlob = await response.blob();
-                    const pdfFile = new File([pdfBlob], "Vadhel Sarthak's Wedding Invitation.pdf", { type: 'application/pdf' });
+                    const pdfFile = new File([pdfBlob], PDF_FILENAME, { type: 'application/pdf' });
                     
                     // Check if we can share files
                     const shareData = {
@@ -513,7 +516,7 @@ ${senderName}`;
                 const pdfUrl = URL.createObjectURL(pdfBlob);
                 const downloadLink = document.createElement('a');
                 downloadLink.href = pdfUrl;
-                downloadLink.download = "Vadhel Sarthak's Wedding Invitation.pdf";
+                downloadLink.download = PDF_FILENAME;
                 
                 // Trigger PDF download
                 document.body.appendChild(downloadLink);
@@ -537,8 +540,8 @@ ${senderName}`;
                     // Show instructions to user
                     setTimeout(() => {
                         alert(ANDROID_WHATSAPP_INSTRUCTIONS);
-                    }, 500);
-                }, 300);
+                    }, INSTRUCTIONS_DELAY_MS);
+                }, PDF_DOWNLOAD_DELAY_MS);
                 
             } catch (error) {
                 console.error('Error in Android WhatsApp method:', error);
