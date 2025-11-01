@@ -423,10 +423,8 @@ ${senderName}`;
                         }
                     );
                     
-                    // Prepare share data for Web Share API
-                    // IMPORTANT: Property order is critical for Android WhatsApp!
-                    // The 'text' field must come before 'files' to ensure it's properly
-                    // mapped to Android's EXTRA_TEXT intent extra, which WhatsApp uses as the caption
+                    // IMPORTANT: Property order matters for Android WhatsApp caption support
+                    // Text must come before files to map correctly to Android's EXTRA_TEXT
                     const shareData = {
                         text: message,
                         title: 'Wedding Invitation',
@@ -437,9 +435,6 @@ ${senderName}`;
                         // Hide loading indicator
                         document.getElementById('loading').classList.remove('show');
                         
-                        // Share using Web Share API
-                        // When user selects WhatsApp from the share sheet, the text will be used as caption
-                        // This implementation ensures compatibility with both Android and iOS
                         await navigator.share(shareData);
                         
                         const platform = isAndroidDevice() ? '(Android)' : '(iOS/other)';
