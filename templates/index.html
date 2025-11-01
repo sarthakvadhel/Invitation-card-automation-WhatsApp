@@ -406,13 +406,24 @@ ${senderName}`;
                     }
                     
                     const pdfBlob = await response.blob();
-                    const pdfFile = new File([pdfBlob], "Vadhel Sarthak's Wedding Invitation.pdf", { type: 'application/pdf' });
+                    // Create File object with proper MIME type
+                    // Note: Filename is visible when sharing and helps identify the content
+                    const pdfFile = new File(
+                        [pdfBlob], 
+                        "Vadhel Sarthak's Wedding Invitation.pdf", 
+                        { 
+                            type: 'application/pdf',
+                            lastModified: new Date().getTime()
+                        }
+                    );
                     
-                    // Check if we can share files
+                    // Prepare share data
+                    // IMPORTANT: Order matters on Android! Text should come before files
+                    // to ensure it's properly used as caption in WhatsApp
                     const shareData = {
+                        text: message,        // Caption text - must come first for Android WhatsApp
                         title: 'Wedding Invitation',
-                        text: message,
-                        files: [pdfFile]
+                        files: [pdfFile]      // PDF file
                     };
                     
                     if (navigator.canShare(shareData)) {
@@ -420,6 +431,7 @@ ${senderName}`;
                         document.getElementById('loading').classList.remove('show');
                         
                         // Share using Web Share API
+                        // When user selects WhatsApp, the text will be used as caption
                         await navigator.share(shareData);
                         
                         console.log('✓ Shared successfully via', senderName);
