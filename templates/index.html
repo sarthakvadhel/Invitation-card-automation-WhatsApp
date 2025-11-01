@@ -312,6 +312,9 @@
             {% endfor %}
         };
         
+        // Configuration constants
+        const ANDROID_WHATSAPP_INSTRUCTIONS = '📱 Android WhatsApp Instructions:\n\n1. ✅ The invitation PDF has been downloaded to your device\n2. ✅ WhatsApp will open with the greeting message\n3. 📎 Please tap the attachment icon and select the downloaded PDF\n4. ✈️ Send the message with the PDF attached';
+        
         // Debounce timer
         let translationTimer = null;
         
@@ -517,6 +520,9 @@ ${senderName}`;
                 downloadLink.click();
                 document.body.removeChild(downloadLink);
                 
+                // Revoke the object URL to free memory
+                URL.revokeObjectURL(pdfUrl);
+                
                 // Hide loading indicator
                 document.getElementById('loading').classList.remove('show');
                 
@@ -530,7 +536,7 @@ ${senderName}`;
                     
                     // Show instructions to user
                     setTimeout(() => {
-                        alert('📱 Android WhatsApp Instructions:\n\n1. ✅ The invitation PDF has been downloaded to your device\n2. ✅ WhatsApp will open with the greeting message\n3. 📎 Please tap the attachment icon and select the downloaded PDF\n4. ✈️ Send the message with the PDF attached');
+                        alert(ANDROID_WHATSAPP_INSTRUCTIONS);
                     }, 500);
                 }, 300);
                 
