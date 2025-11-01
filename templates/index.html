@@ -315,6 +315,11 @@
         // Debounce timer
         let translationTimer = null;
         
+        // Platform detection helper
+        function isAndroidDevice() {
+            return /Android/i.test(navigator.userAgent);
+        }
+        
         // Listen for input changes
         document.getElementById('name_english').addEventListener('input', function(e) {
             const nameEnglish = e.target.value.trim();
@@ -406,12 +411,21 @@ ${senderName}`;
                     }
                     
                     const pdfBlob = await response.blob();
-                    const pdfFile = new File([pdfBlob], "Vadhel Sarthak's Wedding Invitation.pdf", { type: 'application/pdf' });
+                    // Create File object with lastModified timestamp for better Android handling
+                    const pdfFile = new File(
+                        [pdfBlob], 
+                        "Vadhel Sarthak's Wedding Invitation.pdf", 
+                        { 
+                            type: 'application/pdf',
+                            lastModified: Date.now()
+                        }
+                    );
                     
-                    // Check if we can share files
+                    // IMPORTANT: Property order matters for Android WhatsApp caption support
+                    // Text must come before files to map correctly to Android's EXTRA_TEXT
                     const shareData = {
-                        title: 'Wedding Invitation',
                         text: message,
+                        title: 'Wedding Invitation',
                         files: [pdfFile]
                     };
                     
@@ -419,10 +433,10 @@ ${senderName}`;
                         // Hide loading indicator
                         document.getElementById('loading').classList.remove('show');
                         
-                        // Share using Web Share API
                         await navigator.share(shareData);
                         
-                        console.log('✓ Shared successfully via', senderName);
+                        const platform = isAndroidDevice() ? '(Android)' : '(iOS/other)';
+                        console.log('✓ Shared successfully via', senderName, platform);
                     } else {
                         // Fall back to old method if file sharing is not supported
                         console.log('File sharing not supported, using fallback method');

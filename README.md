@@ -178,11 +178,12 @@ Each sender's name appears in the WhatsApp message and the remark.
 ### Modern Browsers (Web Share API - Recommended)
 - **Mobile (Android/iOS):** Opens native share dialog with PDF already attached
   - Works on Chrome, Safari, Edge, and other modern mobile browsers
-  - PDF is embedded with the message - no download needed
+  - PDF is embedded with the greeting message - no download needed
   - Saves device storage - PDFs are not saved to device
   - Select WhatsApp from share options
-  - Message and PDF are pre-filled
-  - Just tap send!
+  - **Android:** The greeting text is automatically included as caption when WhatsApp is selected
+  - **iOS:** The greeting text is automatically included as caption (works seamlessly)
+  - Message text and PDF are pre-filled - just tap send!
 
 ### Desktop / Older Browsers (Fallback Method)
 - Opens WhatsApp Web in a new tab
@@ -221,6 +222,9 @@ See `config_example.py` for reference.
 - **Translation**: Built-in English to Gujarati mapping
 - **PDF Generation**: PyPDF2 + ReportLab + uharfbuzz (for complex text shaping)
 - **Font**: Noto Sans Gujarati (for proper Gujarati rendering)
+- **Sharing**: Web Share API Level 2 (with file support)
+  - Optimized for Android WhatsApp caption embedding
+  - Text field is placed before files in share data for proper Android handling
 
 ### Files Structure
 ```
