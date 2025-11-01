@@ -379,7 +379,6 @@
             buttons.forEach(btn => btn.disabled = true);
         }
         
-        
         async function sendInvitation(senderKey) {
             if (!currentNameGujarati) {
                 alert('Please enter a guest name first');
@@ -412,8 +411,7 @@ ${senderName}`;
                     }
                     
                     const pdfBlob = await response.blob();
-                    // Create File object with proper MIME type
-                    // Note: Filename is visible when sharing and helps identify the content
+                    // Create File object with lastModified timestamp for better Android handling
                     const pdfFile = new File(
                         [pdfBlob], 
                         "Vadhel Sarthak's Wedding Invitation.pdf", 
