@@ -391,6 +391,9 @@
 સાદર,
 ${senderName}`;
             
+            // Detect if running on Android
+            const isAndroid = /Android/i.test(navigator.userAgent);
+            
             // Check if Web Share API is available with file support
             if (navigator.share && navigator.canShare) {
                 try {
@@ -431,10 +434,15 @@ ${senderName}`;
                         document.getElementById('loading').classList.remove('show');
                         
                         // Share using Web Share API
-                        // When user selects WhatsApp, the text will be used as caption
+                        // When user selects WhatsApp from the share sheet, the text will be used as caption
+                        // This works on iOS and should work on Android as well
                         await navigator.share(shareData);
                         
-                        console.log('✓ Shared successfully via', senderName);
+                        if (isAndroid) {
+                            console.log('✓ Shared successfully via', senderName, '(Android - caption should appear in WhatsApp)');
+                        } else {
+                            console.log('✓ Shared successfully via', senderName);
+                        }
                     } else {
                         // Fall back to old method if file sharing is not supported
                         console.log('File sharing not supported, using fallback method');
