@@ -416,17 +416,18 @@ ${senderName}`;
                         "Vadhel Sarthak's Wedding Invitation.pdf", 
                         { 
                             type: 'application/pdf',
-                            lastModified: new Date().getTime()
+                            lastModified: Date.now()
                         }
                     );
                     
-                    // Prepare share data
-                    // IMPORTANT: Order matters on Android! Text should come before files
-                    // to ensure it's properly used as caption in WhatsApp
+                    // Prepare share data for Web Share API
+                    // IMPORTANT: Property order is critical for Android WhatsApp!
+                    // The 'text' field must come before 'files' to ensure it's properly
+                    // mapped to Android's EXTRA_TEXT intent extra, which WhatsApp uses as the caption
                     const shareData = {
-                        text: message,        // Caption text - must come first for Android WhatsApp
+                        text: message,
                         title: 'Wedding Invitation',
-                        files: [pdfFile]      // PDF file
+                        files: [pdfFile]
                     };
                     
                     if (navigator.canShare(shareData)) {
